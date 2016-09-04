@@ -1,0 +1,11 @@
+# IntelliJ
+.DS_Store
+.idea
+*.iml
+*.class
+out
+lib
+.mvn
+target
+*.pdf
+*.jpg
