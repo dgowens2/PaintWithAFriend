@@ -4,9 +4,9 @@ package sample;
  * Created by DTG2 on 09/06/16.
  */
 public class Stroke {
-    double xPlane;
-    double yPlane;
-    double strokeSize;
+    public double xPlane;
+    public double yPlane;
+    public double strokeSize;
 
 
     public Stroke() {

@@ -47,7 +47,7 @@ public class Main extends Application {
     @Override
     public void start(Stage primaryStage) throws Exception{
         Parent root = FXMLLoader.load(getClass().getResource("sample.fxml"));
-        primaryStage.setTitle("Client's World");
+        primaryStage.setTitle("Alex's World");
 
 //      this uses a grid layout
         GridPane grid = new GridPane();
@@ -57,7 +57,7 @@ public class Main extends Application {
         grid.setPadding(new Insets(25, 25, 25, 25));
         grid.setGridLinesVisible(true);
 
-        // add buttons and canvas to the grid
+//      add buttons and canvas to the grid
         Text sceneTitle = new Text("Welcome to Donald's Paint Application");
         sceneTitle.setFont(Font.font("Tahoma", FontWeight.NORMAL, 20));
         grid.add(sceneTitle, 0, 0); //sets to where you want to add this info to the grid. 1st column, then row
@@ -93,11 +93,11 @@ public class Main extends Application {
         buttonThree.setOnAction(new EventHandler<ActionEvent>() {
 //            @Override
             public void handle(ActionEvent e) {
-                startServer();
+                startServer(gc);
             }
         });
 
-        // add canvas
+//      add canvas
         Canvas canvas = new Canvas(DEFAULT_SCENE_WIDTH, DEFAULT_SCENE_HEIGHT-100); //canvas matches the scene width but is less than the screen height
 
         gc = canvas.getGraphicsContext2D();
@@ -133,15 +133,7 @@ public class Main extends Application {
         grid.setOnKeyPressed(new EventHandler<KeyEvent>() {
 
             public void handle(KeyEvent e) {
-                if (e.getText().equalsIgnoreCase("c")) {
-                    try {
-                        start(primaryStage);
-                    } catch (Exception e1) {
-                        e1.printStackTrace();
-                    }
-//                outputToServer.println(e.getCode());
-//                outputToServer.println(e.getText());
-                } else if (e.getCode() == KeyCode.UP) {
+                if (e.getCode() == KeyCode.UP) {
                     strokeSize += 10;
                     if (strokeSize == 21) {
                         strokeSize -=1;
@@ -171,16 +163,15 @@ public class Main extends Application {
         Stage secondaryStage = new Stage();
         secondaryStage.setTitle("Server's World");
 
-        // we're using a grid layout
+//      we're using a grid layout
         GridPane grid = new GridPane();
         grid.setAlignment(Pos.CENTER);
         grid.setHgap(10);
         grid.setVgap(10);
         grid.setPadding(new Insets(25, 25, 25, 25));
         grid.setGridLinesVisible(false);
-//        grid.setPrefSize(primaryStage.getMaxWidth(), primaryStage.getMaxHeight());
 
-        // add buttons and canvas to the grid
+//      add buttons and canvas to the grid
         Text sceneTitle = new Text("Welcome to Paint application");
         sceneTitle.setFont(Font.font("Tahoma", FontWeight.NORMAL, 20));
         grid.add(sceneTitle, 0, 0);
@@ -198,14 +189,14 @@ public class Main extends Application {
             }
         });
 
-        // add canvas
+//      add canvas
         Canvas canvas= new Canvas(DEFAULT_SCENE_WIDTH, DEFAULT_SCENE_HEIGHT-100);
 
         gcSecond = canvas.getGraphicsContext2D();
 
         grid.add(canvas, 0, 2);
 
-        // set our grid layout on the scene
+//      set our grid layout on the scene
         Scene defaultScene = new Scene(grid, DEFAULT_SCENE_WIDTH, DEFAULT_SCENE_HEIGHT);
 
         secondaryStage.setScene(defaultScene);
@@ -213,15 +204,14 @@ public class Main extends Application {
         secondaryStage.show();
     }
 
-    public static void startServer() {
-        Server myServer = new Server();
+    public static void startServer(GraphicsContext gc) {
+        Server myServer = new Server(gc);
         Thread serverThread = new Thread(myServer);
         serverThread.start();
     }
 
     public void drawingClient() {
 
-//        if (drawingClient == true) {
             try {
                 Socket clientSocket = new Socket("localhost", 8005);
                 outputToServer = new PrintWriter(clientSocket.getOutputStream(), true);
@@ -232,17 +222,15 @@ public class Main extends Application {
                 System.out.println(serverResponse);
 
 //            clientSocket.close();
+
             } catch (IOException exception) {
                 exception.printStackTrace();
             }
-//        }
     }
 
     public String jsonSerialize(Stroke strokeInfo) {
         JsonSerializer jsonSerializer = new JsonSerializer().deep(true);
         String jsonString = jsonSerializer.serialize(strokeInfo);
-
-//        System.out.println("Serialize test " + jsonString);
 
         return jsonString;
     }

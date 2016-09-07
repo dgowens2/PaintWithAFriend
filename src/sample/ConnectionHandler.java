@@ -9,8 +9,6 @@ import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.net.Socket;
 
-import static java.lang.System.out;
-
 /**
  * Created by DTG2 on 09/04/16.
  */
@@ -27,8 +25,9 @@ public class ConnectionHandler implements Runnable{
         }
     }
 
-    public ConnectionHandler(Socket connection) {
+    public ConnectionHandler(Socket connection, GraphicsContext gc) {
         this.connection = connection;
+        this.gc = gc;
     }
 
     private void handleIncomingConnection (Socket clientSocket) throws IOException {
@@ -43,16 +42,13 @@ public class ConnectionHandler implements Runnable{
             while ((input = inputFromClient.readLine()) != null) {
                 System.out.println(input);
                 outputToClient.println("Output Test");
-                System.out.println(input);
-//                Stroke currentStroke = jsonDeserialize(input);
-//                System.out.println(currentStroke.toString());
-//                    jsonDeserialize(input);
-//                gc.strokeOval(currentStroke.getxPlane(), currentStroke.getyPlane(), currentStroke.getStrokeSize(), currentStroke.getStrokeSize());
-
-//            Platform.runLater(new RunnableGC(gc, jsonRestored));
-
+                String jsonInput = inputFromClient.readLine();
+                System.out.println(jsonInput);
+                Stroke currentStroke = jsonDeserialize(jsonInput);
+                System.out.println(currentStroke.toString());
+                gc.strokeOval(currentStroke.getxPlane(), currentStroke.getyPlane(), currentStroke.getStrokeSize(), currentStroke.getStrokeSize());
+                System.out.println("test");
             }
-
 
         } catch (Exception exception) {
             exception.printStackTrace();
@@ -60,10 +56,8 @@ public class ConnectionHandler implements Runnable{
     }
 
     public Stroke jsonDeserialize(String jsonString) {
-        JsonParser ToDoItemParser = new JsonParser();
-        Stroke strokeItem = ToDoItemParser.parse(jsonString, Stroke.class);
-
-        out.println("Deserialize " + strokeItem);
+        JsonParser strokeParser = new JsonParser();
+        Stroke strokeItem = strokeParser.parse(jsonString, Stroke.class);
 
         return strokeItem;
     }
