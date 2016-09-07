@@ -21,6 +21,7 @@ import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
 import javafx.scene.text.Text;
 import javafx.stage.Stage;
+import jodd.json.JsonSerializer;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -35,13 +36,18 @@ public class Main extends Application {
     boolean mouseMoving = true;
     double X;
     double Y;
+    double strokeSize = 5;
+    GraphicsContext gc = null;
     GraphicsContext gcSecond = null;
-    Server myServer = new Server();
+    Stroke strokeInfo ;
+    PrintWriter outputToServer;
+    BufferedReader inputFromServer;
+    boolean drawingClient = false;
 
     @Override
     public void start(Stage primaryStage) throws Exception{
         Parent root = FXMLLoader.load(getClass().getResource("sample.fxml"));
-        primaryStage.setTitle("Alex's World");
+        primaryStage.setTitle("Client's World");
 
 //      this uses a grid layout
         GridPane grid = new GridPane();
@@ -56,7 +62,7 @@ public class Main extends Application {
         sceneTitle.setFont(Font.font("Tahoma", FontWeight.NORMAL, 20));
         grid.add(sceneTitle, 0, 0); //sets to where you want to add this info to the grid. 1st column, then row
 
-        Button buttonOne = new Button("Sample paint button");
+        Button buttonOne = new Button("Open second screen");
         HBox hbButton = new HBox(10); //create container for the button
         hbButton.setAlignment(Pos.TOP_LEFT); //set container alignment
         hbButton.getChildren().add(buttonOne); //add button to the container
@@ -65,30 +71,40 @@ public class Main extends Application {
         Button buttonTwo = new Button("Open client");
         hbButton.getChildren().add(buttonTwo);
 
+        Button buttonThree = new Button("Start Server");
+        hbButton.getChildren().add(buttonThree);
+
         buttonOne.setOnAction(new EventHandler<ActionEvent>() {
             @Override
             public void handle(ActionEvent e) {
-                System.out.println("I can switch to another scene here ...");
+                outputToServer.println("I can switch to another scene here ...");
                 startSecondStage();
-//                myServer.startServer();
             }
         });
 
         buttonTwo.setOnAction(new EventHandler<ActionEvent>() {
             @Override
             public void handle(ActionEvent e) {
+                drawingClient();
+                drawingClient = true;
+            }
+        });
 
+        buttonThree.setOnAction(new EventHandler<ActionEvent>() {
+//            @Override
+            public void handle(ActionEvent e) {
+                startServer();
             }
         });
 
         // add canvas
         Canvas canvas = new Canvas(DEFAULT_SCENE_WIDTH, DEFAULT_SCENE_HEIGHT-100); //canvas matches the scene width but is less than the screen height
 
-        GraphicsContext gc = canvas.getGraphicsContext2D();
+        gc = canvas.getGraphicsContext2D();
         gc.setFill(Color.GREEN);
         gc.setStroke(Color.BLUE);
         gc.setStroke(Color.color(Math.random(), Math.random(), Math.random()));
-        gc.setLineWidth(5);
+        gc.setLineWidth(strokeSize);
 
         canvas.setOnMouseMoved(new EventHandler<MouseEvent>() {//setup mouse event
 //        canvas.setOnMouseDragged(new EventHandler<MouseEvent>() {//alternate setup mouse event
@@ -97,12 +113,18 @@ public class Main extends Application {
             public void handle(MouseEvent e) {
               if (mouseMoving) {
                   if (e.isDragDetect()) {
-                      gc.strokeOval(e.getX(), e.getY(), 10, 10);
-                      X = e.getX();
-                      Y = e.getY();
+                      gc.strokeOval(e.getX(), e.getY(), strokeSize, strokeSize);
+                      strokeInfo = new Stroke(e.getX(),e.getY(),strokeSize);
+
+                      jsonSerialize(strokeInfo);
+                      if (drawingClient == true) {
+                          outputToServer.println(jsonSerialize(strokeInfo));
+                      }
+
                   }
                   if(gcSecond != null) {
-                      gcSecond.strokeOval(X, Y, 10, 10);
+                      gcSecond.strokeOval(strokeInfo.getxPlane(), strokeInfo.yPlane, strokeInfo.getStrokeSize(), strokeInfo.getStrokeSize());
+
                   }
               }
             }
@@ -117,12 +139,18 @@ public class Main extends Application {
                     } catch (Exception e1) {
                         e1.printStackTrace();
                     }
-                System.out.println(e.getCode());
-                System.out.println(e.getText());
+//                outputToServer.println(e.getCode());
+//                outputToServer.println(e.getText());
                 } else if (e.getCode() == KeyCode.UP) {
-                    gc.setLineWidth(gc.getLineWidth() + 10);
+                    strokeSize += 10;
+                    if (strokeSize == 21) {
+                        strokeSize -=1;
+                    }
                 } else if (e.getCode() == KeyCode.DOWN) {
-                    gc.setLineWidth(gc.getLineWidth() - 10);
+                    strokeSize -= 10;
+                    if (strokeSize == 1) {
+                        strokeSize +=1;
+                    }
                 } else if (e.getText().equalsIgnoreCase("d")){
                     mouseMoving = !mouseMoving;
                 }
@@ -141,7 +169,7 @@ public class Main extends Application {
 
     public void startSecondStage() {
         Stage secondaryStage = new Stage();
-        secondaryStage.setTitle("Audrey's World");
+        secondaryStage.setTitle("Server's World");
 
         // we're using a grid layout
         GridPane grid = new GridPane();
@@ -157,18 +185,18 @@ public class Main extends Application {
         sceneTitle.setFont(Font.font("Tahoma", FontWeight.NORMAL, 20));
         grid.add(sceneTitle, 0, 0);
 
-//        Button button = new Button("Sample paint button");
-//        HBox hbButton = new HBox(10);
-//        hbButton.setAlignment(Pos.TOP_LEFT);
-//        hbButton.getChildren().add(button);
-//        grid.add(hbButton, 0, 1);
-//
-//        button.setOnAction(new EventHandler<ActionEvent>() {
-//            @Override
-//            public void handle(ActionEvent e) {
-//                System.out.println("I can switch to another scene here ...");
-//            }
-//        });
+        Button button = new Button("Start client");
+        HBox hbButton = new HBox(10);
+        hbButton.setAlignment(Pos.TOP_LEFT);
+        hbButton.getChildren().add(button);
+        grid.add(hbButton, 0, 1);
+
+        button.setOnAction(new EventHandler<ActionEvent>() {
+            @Override
+            public void handle(ActionEvent e) {
+                outputToServer.println("I can switch to another scene here ...");
+            }
+        });
 
         // add canvas
         Canvas canvas= new Canvas(DEFAULT_SCENE_WIDTH, DEFAULT_SCENE_HEIGHT-100);
@@ -181,28 +209,42 @@ public class Main extends Application {
         Scene defaultScene = new Scene(grid, DEFAULT_SCENE_WIDTH, DEFAULT_SCENE_HEIGHT);
 
         secondaryStage.setScene(defaultScene);
-//        System.out.println("About to show the second stage");
 
         secondaryStage.show();
-
     }
 
-    public static void drawingClient() {
+    public static void startServer() {
+        Server myServer = new Server();
+        Thread serverThread = new Thread(myServer);
+        serverThread.start();
+    }
 
-        try {
-        Socket clientSocket = new Socket("localhost", 8005);
-        PrintWriter out = new PrintWriter(clientSocket.getOutputStream(), true);
-        BufferedReader in = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
+    public void drawingClient() {
 
-        String serverResponse;
-        serverResponse = in.readLine();
-        System.out.println("Received message: " + serverResponse);
+//        if (drawingClient == true) {
+            try {
+                Socket clientSocket = new Socket("localhost", 8005);
+                outputToServer = new PrintWriter(clientSocket.getOutputStream(), true);
+                inputFromServer = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
 
+                outputToServer.println("Let's begin");
+                String serverResponse = inputFromServer.readLine();
+                System.out.println(serverResponse);
 
-        clientSocket.close();
-        } catch (IOException exception) {
-        exception.printStackTrace();
-        }
+//            clientSocket.close();
+            } catch (IOException exception) {
+                exception.printStackTrace();
+            }
+//        }
+    }
+
+    public String jsonSerialize(Stroke strokeInfo) {
+        JsonSerializer jsonSerializer = new JsonSerializer().deep(true);
+        String jsonString = jsonSerializer.serialize(strokeInfo);
+
+//        System.out.println("Serialize test " + jsonString);
+
+        return jsonString;
     }
 
     public static void main(String[] args) {

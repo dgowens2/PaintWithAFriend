@@ -9,6 +9,7 @@ import java.net.Socket;
  */
 public class Server implements Runnable{
     public void run() {
+        startServer();
     }
 
     public void startServer() {
@@ -25,15 +26,6 @@ public class Server implements Runnable{
                 handlerThread.start();
             }
         } catch (IOException exception) {
-            exception.printStackTrace();
-        }
-    }
-
-    public static void main(String[] args) {
-        Server myServer = new Server();
-        try{
-            myServer.startServer();
-        } catch (Exception exception) {
             exception.printStackTrace();
         }
     }
